@@ -1,0 +1,134 @@
+services:
+  ######################
+  # Postgres (user-service)
+  ######################
+  user-db:
+    image: postgres:16-alpine
+    container_name: pinstack-user-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: userservice
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    networks:
+      - pinstack
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  user-migrator:
+    container_name: pinstack-user-migrator
+    build:
+      context: ../pinstack-user-service
+      dockerfile: Dockerfile.migrator
+    depends_on:
+      user-db:
+        condition: service_healthy
+    volumes:
+      - ../pinstack-user-service/migrations:/app/migrations
+      - ../pinstack-user-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    command: ./migrator -command up
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pinstack-user-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - "5050:5050"
+    depends_on:
+      user-db:
+        condition: service_healthy
+    networks:
+      - pinstack
+
+
+#  user-service:
+#    build:
+#      context: ../user-service
+#      dockerfile: Dockerfile
+#    depends_on:
+#      - user-migrator
+#    environment:
+#      - CONFIG_PATH=/app/config/config.yml
+#    networks:
+#      - pinstack
+#    expose:
+#      - "8081"
+#
+#  ##################
+#  # API Gateway
+#  ##################
+#  gateway:
+#    build:
+#      context: ../api-gateway
+#      dockerfile: Dockerfile
+#    networks:
+#      - pinstack
+#    expose:
+#      - "8080"
+#
+#  ##################
+#  # NGINX
+#  ##################
+#  nginx:
+#    image: nginx:latest
+#    container_name: pinstack-nginx
+#    ports:
+#      - "80:80"
+#    volumes:
+#      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#    depends_on:
+#      - gateway
+#    networks:
+#      - pinstack
+#
+#  ##################
+#  # Kafka (для notifications)
+#  ##################
+#  zookeeper:
+#    image: confluentinc/cp-zookeeper:latest
+#    environment:
+#      ZOOKEEPER_CLIENT_PORT: 2181
+#    networks:
+#      - pinstack
+#
+#  kafka:
+#    image: confluentinc/cp-kafka:latest
+#    depends_on:
+#      - zookeeper
+#    environment:
+#      KAFKA_BROKER_ID: 1
+#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#    networks:
+#      - pinstack
+#    ports:
+#      - "9092:9092"
+#
+#  ##################
+#  # Redis (по желанию)
+#  ##################
+#  redis:
+#    image: redis:alpine
+#    ports:
+#      - "6379:6379"
+#    networks:
+#      - pinstack
+
+volumes:
+  user_postgres_data:
+
+networks:
+  pinstack:
+    driver: bridge
