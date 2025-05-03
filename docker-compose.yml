@@ -51,20 +51,21 @@ services:
     networks:
       - pinstack
 
+  user-service:
+    container_name: pinstack-user-service
+    build:
+      context: ../pinstack-user-service
+      dockerfile: Dockerfile
+    depends_on:
+      user-migrator:
+        condition: service_completed_successfully
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    ports:
+      - "50051:50051"
 
-#  user-service:
-#    build:
-#      context: ../user-service
-#      dockerfile: Dockerfile
-#    depends_on:
-#      - user-migrator
-#    environment:
-#      - CONFIG_PATH=/app/config/config.yml
-#    networks:
-#      - pinstack
-#    expose:
-#      - "8081"
-#
 #  ##################
 #  # API Gateway
 #  ##################
