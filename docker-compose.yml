@@ -66,6 +66,66 @@ services:
     ports:
       - "50051:50051"
 
+  ######################
+  # Postgres (auth-service)
+  ######################
+  auth-db:
+    image: postgres:16-alpine
+    container_name: pinstack-auth-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: authservice
+      POSTGRES_PORT: 5433
+    command: postgres -p 5433
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5433"
+    networks:
+      - pinstack
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5433"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-migrator:
+    container_name: pinstack-auth-migrator
+    build:
+      context: ../pinstack-auth-service
+      dockerfile: Dockerfile.migrator
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    volumes:
+      - ../pinstack-auth-service/migrations:/app/migrations
+      - ../pinstack-auth-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    command: ./migrator -command up
+
+  auth-service:
+    container_name: pinstack-auth-service
+    build:
+      context: ../pinstack-auth-service
+      dockerfile: Dockerfile
+    depends_on:
+      auth-migrator:
+        condition: service_completed_successfully
+      user-service:
+        condition: service_started
+    volumes:
+      - ../pinstack-auth-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    ports:
+      - "50052:50052"
+
   ##################
   # API Gateway
   ##################
@@ -76,6 +136,7 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - user-service
+      - auth-service
     environment:
       - ENV=dev
     networks:
@@ -134,6 +195,7 @@ services:
 
 volumes:
   user_postgres_data:
+  auth_postgres_data:
 
 networks:
   pinstack:
