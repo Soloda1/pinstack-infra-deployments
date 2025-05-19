@@ -126,6 +126,66 @@ services:
     ports:
       - "50052:50052"
 
+  ######################
+  # Postgres (post-service)
+  ######################
+  post-db:
+    image: postgres:16-alpine
+    container_name: pinstack-post-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: postservice
+      POSTGRES_PORT: 5434
+    command: postgres -p 5434
+    volumes:
+      - post_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5434"
+    networks:
+      - pinstack
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5434"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  post-migrator:
+    container_name: pinstack-post-migrator
+    build:
+      context: ../pinstack-post-service
+      dockerfile: Dockerfile.migrator
+    depends_on:
+      post-db:
+        condition: service_healthy
+    volumes:
+      - ../pinstack-post-service/migrations:/app/migrations
+      - ../pinstack-post-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    command: ./migrator -command up
+
+  post-service:
+    container_name: pinstack-post-service
+    build:
+      context: ../pinstack-post-service
+      dockerfile: Dockerfile
+    depends_on:
+      post-migrator:
+        condition: service_completed_successfully
+      user-service:
+        condition: service_started
+    volumes:
+      - ../pinstack-post-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    ports:
+      - "50053:50053"
+
   ##################
   # API Gateway
   ##################
@@ -196,6 +256,7 @@ services:
 volumes:
   user_postgres_data:
   auth_postgres_data:
+  post_postgres_data:
 
 networks:
   pinstack:
