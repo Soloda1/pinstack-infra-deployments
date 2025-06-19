@@ -186,6 +186,72 @@ services:
     ports:
       - "50053:50053"
 
+  ######################
+  # Postgres (relation-service)
+  ######################
+  relation-db:
+    image: postgres:16-alpine
+    container_name: pinstack-relation-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: relationservice
+      POSTGRES_PORT: 5435
+    command: postgres -p 5435
+    volumes:
+      - relation_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5435"
+    networks:
+      - pinstack
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5435"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  relation-migrator:
+    container_name: pinstack-relation-migrator
+    build:
+      context: ../pinstack-relation-service
+      dockerfile: Dockerfile.migrator
+    depends_on:
+      relation-db:
+        condition: service_healthy
+    volumes:
+      - ../pinstack-relation-service/migrations:/app/migrations
+      - ../pinstack-relation-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    command: ./migrator -command up
+
+  relation-service:
+    container_name: pinstack-relation-service
+    build:
+      context: ../pinstack-relation-service
+      dockerfile: Dockerfile
+    depends_on:
+      relation-migrator:
+        condition: service_completed_successfully
+      user-service:
+        condition: service_started
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+    volumes:
+      - ../pinstack-relation-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    ports:
+      - "50054:50054"
+
   ##################
   # API Gateway
   ##################
@@ -346,6 +412,7 @@ volumes:
   user_postgres_data:
   auth_postgres_data:
   post_postgres_data:
+  relation_postgres_data:
   kafka1_data:
   kafka2_data:
   kafka3_data:
