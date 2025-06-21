@@ -397,6 +397,74 @@ services:
     networks:
       - pinstack
 
+  ######################
+  # Postgres (notification-service)
+  ######################
+  notification-db:
+    image: postgres:16-alpine
+    container_name: pinstack-notification-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: notificationservice
+      POSTGRES_PORT: 5436
+    command: postgres -p 5436
+    volumes:
+      - notification_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5436"
+    networks:
+      - pinstack
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5436"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  notification-migrator:
+    container_name: pinstack-notification-migrator
+    build:
+      context: ../pinstack-notification-service
+      dockerfile: Dockerfile.migrator
+    depends_on:
+      notification-db:
+        condition: service_healthy
+    volumes:
+      - ../pinstack-notification-service/migrations:/app/migrations
+      - ../pinstack-notification-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    command: ./migrator -command up
+
+  notification-service:
+    container_name: pinstack-notification-service
+    build:
+      context: ../pinstack-notification-service
+      dockerfile: Dockerfile
+    depends_on:
+      notification-migrator:
+        condition: service_completed_successfully
+      user-service:
+        condition: service_started
+      relation-service:
+        condition: service_started
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+    volumes:
+      - ../pinstack-notification-service/config:/app/config
+    environment:
+      - ENV=dev
+    networks:
+      - pinstack
+    ports:
+      - "50055:50055"
+
 #  ##################
 #  # Redis (по желанию) - This section can be uncommented if Redis is needed later
 #  ##################
@@ -416,6 +484,7 @@ volumes:
   kafka1_data:
   kafka2_data:
   kafka3_data:
+  notification_postgres_data:
 
 networks:
   pinstack:
