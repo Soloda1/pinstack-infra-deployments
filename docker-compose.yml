@@ -65,6 +65,11 @@ services:
       - pinstack
     ports:
       - "50051:50051"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
 
   ######################
   # Postgres (auth-service)
@@ -125,6 +130,11 @@ services:
       - pinstack
     ports:
       - "50052:50052"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
 
   ######################
   # Postgres (post-service)
@@ -185,6 +195,11 @@ services:
       - pinstack
     ports:
       - "50053:50053"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
 
   ######################
   # Postgres (relation-service)
@@ -251,6 +266,11 @@ services:
       - pinstack
     ports:
       - "50054:50054"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
 
   ##################
   # API Gateway
@@ -269,6 +289,11 @@ services:
       - pinstack
     ports:
       - "8080:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
 
   ##################
   # NGINX
@@ -302,21 +327,35 @@ services:
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka1:9092'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-#      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,kafka.network=ERROR,state.change.logger=ERROR"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
+      KAFKA_LOG4J_APPENDER_STDOUT_THRESHOLD: "ERROR"
+      KAFKA_AUTHORIZER_LOGGER_NAME: "ERROR"
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote=false"
+      KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
+      KAFKA_LOG_LEVEL: "ERROR"
     volumes:
       - kafka1_data:/var/lib/kafka/data
     networks:
       - pinstack
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka1:9092 --list || exit 1"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka1:9092 --list > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+        tag: "kafka1-only-errors"
+        env: "KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR"
 
   kafka2:
     image: confluentinc/cp-kafka:latest
@@ -332,21 +371,35 @@ services:
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka2:9092'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-#      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,kafka.network=ERROR,state.change.logger=ERROR"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
+      KAFKA_LOG4J_APPENDER_STDOUT_THRESHOLD: "ERROR"
+      KAFKA_AUTHORIZER_LOGGER_NAME: "ERROR"
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote=false"
+      KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
+      KAFKA_LOG_LEVEL: "ERROR"
     volumes:
       - kafka2_data:/var/lib/kafka/data
     networks:
       - pinstack
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka2:9092 --list || exit 1"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka2:9092 --list > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+        tag: "kafka2-only-errors"
+        env: "KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR"
 
   kafka3:
     image: confluentinc/cp-kafka:latest
@@ -362,21 +415,35 @@ services:
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka3:9092'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-#      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,kafka.network=ERROR,state.change.logger=ERROR"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
+      KAFKA_LOG4J_APPENDER_STDOUT_THRESHOLD: "ERROR"
+      KAFKA_AUTHORIZER_LOGGER_NAME: "ERROR"
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote=false"
+      KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
+      KAFKA_LOG_LEVEL: "ERROR"
     volumes:
       - kafka3_data:/var/lib/kafka/data
     networks:
       - pinstack
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka3:9092 --list || exit 1"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka3:9092 --list > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+        tag: "kafka3-only-errors"
+        env: "KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR"
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -464,17 +531,95 @@ services:
       - pinstack
     ports:
       - "50055:50055"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "10"
 
-#  ##################
-#  # Redis (по желанию) - This section can be uncommented if Redis is needed later
-#  ##################
-#  redis:
-#    image: redis:alpine
-#    ports:
-#      - "6379:6379"
-#    networks:
-#      - pinstack
+  ######################
+  # ELK Stack
+  ######################
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: pinstack-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - pinstack
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: pinstack-logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - "LS_JAVA_OPTS=-Xmx1g -Xms1g"
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - pinstack
+    command: logstash -f /usr/share/logstash/pipeline/logstash.conf
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: pinstack-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - pinstack
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Filebeat для сбора логов Docker контейнеров
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: pinstack-filebeat
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - filebeat_data:/usr/share/filebeat/data
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch:9200
+      - KIBANA_HOST=kibana:5601
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      logstash:
+        condition: service_started
+    networks:
+      - pinstack
+    command: ["--strict.perms=false"]
 
 volumes:
   user_postgres_data:
@@ -485,6 +630,8 @@ volumes:
   kafka2_data:
   kafka3_data:
   notification_postgres_data:
+  elasticsearch_data:
+  filebeat_data:
 
 networks:
   pinstack:
