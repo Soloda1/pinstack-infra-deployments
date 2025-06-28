@@ -449,25 +449,6 @@ services:
         tag: "kafka3-only-errors"
         env: "KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR"
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: pinstack-kafka-ui
-    ports:
-      - "9090:8080"
-    depends_on:
-      kafka1:
-        condition: service_healthy
-      kafka2:
-        condition: service_healthy
-      kafka3:
-        condition: service_healthy
-    environment:
-      KAFKA_CLUSTERS_0_NAME: pinstack-local-kafka
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:9092,kafka2:9092,kafka3:9092
-      DYNAMIC_CONFIG_ENABLED: 'true'
-    networks:
-      - pinstack
-
   ######################
   # Postgres (notification-service)
   ######################
