@@ -40,21 +40,6 @@ services:
       - pinstack
     command: ./migrator -command up
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pinstack-user-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_LISTEN_PORT: 5050
-    ports:
-      - "5050:5050"
-    depends_on:
-      user-db:
-        condition: service_healthy
-    networks:
-      - pinstack
-
   user-service:
     container_name: pinstack-user-service
     build:
@@ -63,6 +48,8 @@ services:
     depends_on:
       user-migrator:
         condition: service_completed_successfully
+    volumes:
+      - ../pinstack-user-service/config:/app/config
     environment:
       - ENV=dev
     networks:
@@ -256,12 +243,8 @@ services:
         condition: service_completed_successfully
       user-service:
         condition: service_started
-      kafka1:
-        condition: service_healthy
-      kafka2:
-        condition: service_healthy
-      kafka3:
-        condition: service_healthy
+      kafka-topics-init:
+        condition: service_completed_successfully
     volumes:
       - ../pinstack-relation-service/config:/app/config
     environment:
@@ -331,19 +314,18 @@ services:
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka1:9092'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
-      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,kafka.network=ERROR,state.change.logger=ERROR"
-      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
-      KAFKA_LOG4J_APPENDER_STDOUT_THRESHOLD: "ERROR"
-      KAFKA_AUTHORIZER_LOGGER_NAME: "ERROR"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "WARN"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=WARN,kafka=WARN,kafka.cluster=WARN,kafka.controller=WARN,kafka.coordinator=WARN,kafka.log=WARN,kafka.server=WARN,kafka.zookeeper=WARN,kafka.network=WARN,state.change.logger=WARN"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: "WARN"
       KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote=false"
       KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
-      KAFKA_LOG_LEVEL: "ERROR"
     volumes:
       - kafka1_data:/var/lib/kafka/data
     networks:
@@ -358,8 +340,6 @@ services:
       options:
         max-size: "10m"
         max-file: "2"
-        tag: "kafka1-only-errors"
-        env: "KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR"
 
   kafka2:
     image: confluentinc/cp-kafka:latest
@@ -375,19 +355,18 @@ services:
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka2:9092'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
-      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,kafka.network=ERROR,state.change.logger=ERROR"
-      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
-      KAFKA_LOG4J_APPENDER_STDOUT_THRESHOLD: "ERROR"
-      KAFKA_AUTHORIZER_LOGGER_NAME: "ERROR"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "WARN"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=WARN,kafka=WARN,kafka.cluster=WARN,kafka.controller=WARN,kafka.coordinator=WARN,kafka.log=WARN,kafka.server=WARN,kafka.zookeeper=WARN,kafka.network=WARN,state.change.logger=WARN"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: "WARN"
       KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote=false"
       KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
-      KAFKA_LOG_LEVEL: "ERROR"
     volumes:
       - kafka2_data:/var/lib/kafka/data
     networks:
@@ -402,8 +381,6 @@ services:
       options:
         max-size: "10m"
         max-file: "2"
-        tag: "kafka2-only-errors"
-        env: "KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR"
 
   kafka3:
     image: confluentinc/cp-kafka:latest
@@ -419,19 +396,18 @@ services:
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka3:9092'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
-      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=ERROR,kafka=ERROR,kafka.cluster=ERROR,kafka.controller=ERROR,kafka.coordinator=ERROR,kafka.log=ERROR,kafka.server=ERROR,kafka.zookeeper=ERROR,kafka.network=ERROR,state.change.logger=ERROR"
-      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
-      KAFKA_LOG4J_APPENDER_STDOUT_THRESHOLD: "ERROR"
-      KAFKA_AUTHORIZER_LOGGER_NAME: "ERROR"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "WARN"
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=WARN,kafka=WARN,kafka.cluster=WARN,kafka.controller=WARN,kafka.coordinator=WARN,kafka.log=WARN,kafka.server=WARN,kafka.zookeeper=WARN,kafka.network=WARN,state.change.logger=WARN"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: "WARN"
       KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote=false"
       KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
-      KAFKA_LOG_LEVEL: "ERROR"
     volumes:
       - kafka3_data:/var/lib/kafka/data
     networks:
@@ -446,8 +422,46 @@ services:
       options:
         max-size: "10m"
         max-file: "2"
-        tag: "kafka3-only-errors"
-        env: "KAFKA_LOG4J_ROOT_LOGLEVEL=ERROR"
+
+  ##################
+  # Kafka Topics Initialization
+  ##################
+  kafka-topics-init:
+    image: confluentinc/cp-kafka:latest
+    container_name: pinstack-kafka-topics-init
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+    networks:
+      - pinstack
+    command: >
+      bash -c "
+        echo 'Waiting for Kafka to be ready...'
+        sleep 10
+
+        BOOTSTRAP_SERVERS='kafka1:9092,kafka2:9092,kafka3:9092'
+
+        echo 'Creating topic relation-events...'
+        kafka-topics --bootstrap-server \$$BOOTSTRAP_SERVERS --create --topic relation-events --partitions 3 --replication-factor 3 --if-not-exists
+
+        echo 'Creating topic notifications...'
+        kafka-topics --bootstrap-server \$$BOOTSTRAP_SERVERS --create --topic notifications --partitions 3 --replication-factor 3 --if-not-exists
+
+        echo 'List of topics:'
+        kafka-topics --bootstrap-server \$$BOOTSTRAP_SERVERS --list
+
+        echo 'Initialization completed!'
+      "
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "1"
 
   ######################
   # Postgres (notification-service)
@@ -502,12 +516,8 @@ services:
         condition: service_started
       relation-service:
         condition: service_started
-      kafka1:
-        condition: service_healthy
-      kafka2:
-        condition: service_healthy
-      kafka3:
-        condition: service_healthy
+      kafka-topics-init:
+        condition: service_completed_successfully
     volumes:
       - ../pinstack-notification-service/config:/app/config
     environment:
@@ -536,4 +546,5 @@ volumes:
 
 networks:
   pinstack:
-    external: true
+    name: pinstack
+    driver: bridge
