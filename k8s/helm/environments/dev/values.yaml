@@ -1,0 +1,5 @@
+global:
+  namespace: pinstack
+  environment: dev
+  imagePullPolicy: IfNotPresent
+
