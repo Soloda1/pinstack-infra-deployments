@@ -1,0 +1,49 @@
+{{- if .Values.migrator.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "post-service.fullname" . }}-migrator
+  labels:
+    {{- include "post-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrator.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrator.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.migrator.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "post-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrator
+          image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag }}"
+          imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.migrator.command | nindent 12 }}
+          env:
+            - name: ENV
+              value: {{ .Values.env.ENV | quote }}
+            - name: DB_HOST
+              value: {{ .Values.db.host | quote }}
+            - name: DB_PORT
+              value: {{ .Values.db.port | quote }}
+            - name: DB_NAME
+              value: {{ .Values.db.name | quote }}
+            - name: DB_USER
+              value: {{ .Values.db.user | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.passwordSecret.name }}
+                  key: {{ .Values.db.passwordSecret.key }}
+{{- end }}
+
