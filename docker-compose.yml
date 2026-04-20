@@ -72,16 +72,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: authservice
-      POSTGRES_PORT: 5433
-    command: postgres -p 5433
+      POSTGRES_PORT: 5432
+    command: postgres -p 5432
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5433"
+      - "5433:5432"
     networks:
       - pinstack
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -p 5433"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5432"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -137,16 +137,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: postservice
-      POSTGRES_PORT: 5434
-    command: postgres -p 5434
+      POSTGRES_PORT: 5432
+    command: postgres -p 5432
     volumes:
       - post_postgres_data:/var/lib/postgresql/data
     ports:
-      - "5434:5434"
+      - "5434:5432"
     networks:
       - pinstack
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -p 5434"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5432"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -202,16 +202,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: relationservice
-      POSTGRES_PORT: 5435
-    command: postgres -p 5435
+      POSTGRES_PORT: 5432
+    command: postgres -p 5432
     volumes:
       - relation_postgres_data:/var/lib/postgresql/data
     ports:
-      - "5435:5435"
+      - "5435:5432"
     networks:
       - pinstack
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -p 5435"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5432"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -473,16 +473,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: notificationservice
-      POSTGRES_PORT: 5436
-    command: postgres -p 5436
+      POSTGRES_PORT: 5432
+    command: postgres -p 5432
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data
     ports:
-      - "5436:5436"
+      - "5436:5432"
     networks:
       - pinstack
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -p 5436"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -p 5432"]
       interval: 5s
       timeout: 5s
       retries: 5
