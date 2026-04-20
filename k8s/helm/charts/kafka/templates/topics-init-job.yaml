@@ -1,0 +1,51 @@
+{{- if .Values.topicsInit.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kafka.fullname" . }}-topics-init
+  labels:
+    {{- include "kafka.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.topicsInit.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.topicsInit.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.topicsInit.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "kafka.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: topics-init
+          image: "{{ .Values.topicsInit.image.repository }}:{{ .Values.topicsInit.image.tag }}"
+          imagePullPolicy: {{ .Values.topicsInit.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              echo "Waiting for Kafka to be ready..."
+              sleep {{ .Values.topicsInit.waitSeconds }}
+
+              BOOTSTRAP_SERVERS='{{ .Values.topicsInit.bootstrapServers }}'
+
+              {{- range .Values.topicsInit.topics }}
+              echo "Creating topic {{ .name }}..."
+              kafka-topics --bootstrap-server "${BOOTSTRAP_SERVERS}" --create --topic {{ .name }} --partitions {{ .partitions }} --replication-factor {{ .replicationFactor }} --if-not-exists
+              {{- end }}
+
+              echo "List of topics:"
+              kafka-topics --bootstrap-server "${BOOTSTRAP_SERVERS}" --list
+              echo "Initialization completed!"
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
+

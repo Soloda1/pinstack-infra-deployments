@@ -8,8 +8,8 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: client
       protocol: TCP
-      name: http
+      name: client
   selector:
     {{- include "kafka.selectorLabels" . | nindent 4 }}

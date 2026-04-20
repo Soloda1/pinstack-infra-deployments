@@ -1,13 +1,12 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "kafka.fullname" . }}
   labels:
     {{- include "kafka.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  serviceName: {{ include "kafka.fullname" . }}-headless
   selector:
     matchLabels:
       {{- include "kafka.selectorLabels" . | nindent 6 }}
@@ -27,43 +26,69 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "kafka.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: kafka
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              export KAFKA_NODE_ID="${HOSTNAME##*-}"
+              export KAFKA_PROCESS_ROLES='broker,controller'
+              export KAFKA_LISTENERS='PLAINTEXT://:{{ .Values.service.port }},CONTROLLER://:{{ .Values.service.controllerPort }}'
+              export KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://${HOSTNAME}.{{ include "kafka.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}"
+              export KAFKA_INTER_BROKER_LISTENER_NAME='PLAINTEXT'
+              export KAFKA_CONTROLLER_LISTENER_NAMES='CONTROLLER'
+              export KAFKA_LOG_DIRS='/var/lib/kafka/data'
+              export CLUSTER_ID='{{ .Values.kraft.clusterId }}'
+              export KAFKA_CONTROLLER_QUORUM_VOTERS="0@{{ include "kafka.fullname" . }}-0.{{ include "kafka.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.controllerPort }},1@{{ include "kafka.fullname" . }}-1.{{ include "kafka.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.controllerPort }},2@{{ include "kafka.fullname" . }}-2.{{ include "kafka.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.controllerPort }}"
+              export KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR='3'
+              export KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR='3'
+              export KAFKA_TRANSACTION_STATE_LOG_MIN_ISR='2'
+              export KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS='0'
+              export KAFKA_AUTO_CREATE_TOPICS_ENABLE='{{ .Values.kafka.autoCreateTopicsEnable }}'
+              export KAFKA_LOG4J_ROOT_LOGLEVEL='{{ .Values.kafka.log4jRootLoglevel }}'
+              export KAFKA_TOOLS_LOG4J_LOGLEVEL='{{ .Values.kafka.toolsLog4jLoglevel }}'
+              export KAFKA_JMX_OPTS='-Dcom.sun.management.jmxremote=false'
+              export KAFKA_HEAP_OPTS='{{ .Values.kafka.heapOpts }}'
+              exec /etc/confluent/docker/run
           ports:
-            - name: http
+            - name: client
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          {{- with .Values.livenessProbe }}
+            - name: controller
+              containerPort: {{ .Values.service.controllerPort }}
+              protocol: TCP
           livenessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.readinessProbe }}
+            tcpSocket:
+              port: client
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
           readinessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            tcpSocket:
+              port: client
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
-      volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+            - name: data
+              mountPath: /var/lib/kafka/data
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -76,3 +101,16 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+  {{- end }}
