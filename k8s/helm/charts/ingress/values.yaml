@@ -8,7 +8,6 @@ serviceAccount:
 ingress:
   className: nginx
   annotations: {}
-  host: pinstack.local
   path: /
   pathType: Prefix
   backendService:
