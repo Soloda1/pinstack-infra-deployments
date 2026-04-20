@@ -45,5 +45,13 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.db.passwordSecret.name }}
                   key: {{ .Values.db.passwordSecret.key }}
+          {{- with .Values.migrator.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.migrator.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 {{- end }}
 

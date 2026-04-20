@@ -43,6 +43,20 @@ migrator:
   backoffLimit: 3
   activeDeadlineSeconds: 180
   ttlSecondsAfterFinished: 300
+  volumeMounts:
+    - name: notification-config
+      mountPath: /app/config
+      readOnly: true
+    - name: notification-migrations
+      mountPath: /app/migrations
+      readOnly: true
+  volumes:
+    - name: notification-config
+      configMap:
+        name: notification-service-config
+    - name: notification-migrations
+      configMap:
+        name: notification-service-migrations
 
 podAnnotations: {}
 podLabels: {}
@@ -64,8 +78,14 @@ readinessProbe:
   timeoutSeconds: 3
   failureThreshold: 6
 
-volumes: []
-volumeMounts: []
+volumes:
+  - name: notification-config
+    configMap:
+      name: notification-service-config
+volumeMounts:
+  - name: notification-config
+    mountPath: /app/config
+    readOnly: true
 
 nodeSelector: {}
 tolerations: []

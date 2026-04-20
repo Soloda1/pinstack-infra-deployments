@@ -43,6 +43,20 @@ migrator:
   backoffLimit: 3
   activeDeadlineSeconds: 180
   ttlSecondsAfterFinished: 300
+  volumeMounts:
+    - name: relation-config
+      mountPath: /app/config
+      readOnly: true
+    - name: relation-migrations
+      mountPath: /app/migrations
+      readOnly: true
+  volumes:
+    - name: relation-config
+      configMap:
+        name: relation-service-config
+    - name: relation-migrations
+      configMap:
+        name: relation-service-migrations
 
 podAnnotations: {}
 podLabels: {}
@@ -64,8 +78,14 @@ readinessProbe:
   timeoutSeconds: 3
   failureThreshold: 6
 
-volumes: []
-volumeMounts: []
+volumes:
+  - name: relation-config
+    configMap:
+      name: relation-service-config
+volumeMounts:
+  - name: relation-config
+    mountPath: /app/config
+    readOnly: true
 
 nodeSelector: {}
 tolerations: []

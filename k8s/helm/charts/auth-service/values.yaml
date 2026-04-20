@@ -43,6 +43,20 @@ migrator:
   backoffLimit: 3
   activeDeadlineSeconds: 180
   ttlSecondsAfterFinished: 300
+  volumeMounts:
+    - name: auth-config
+      mountPath: /app/config
+      readOnly: true
+    - name: auth-migrations
+      mountPath: /app/migrations
+      readOnly: true
+  volumes:
+    - name: auth-config
+      configMap:
+        name: auth-service-config
+    - name: auth-migrations
+      configMap:
+        name: auth-service-migrations
 
 podAnnotations: {}
 podLabels: {}
@@ -64,8 +78,14 @@ readinessProbe:
   timeoutSeconds: 3
   failureThreshold: 6
 
-volumes: []
-volumeMounts: []
+volumes:
+  - name: auth-config
+    configMap:
+      name: auth-service-config
+volumeMounts:
+  - name: auth-config
+    mountPath: /app/config
+    readOnly: true
 
 nodeSelector: {}
 tolerations: []

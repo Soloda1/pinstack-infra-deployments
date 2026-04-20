@@ -43,6 +43,20 @@ migrator:
   backoffLimit: 3
   activeDeadlineSeconds: 180
   ttlSecondsAfterFinished: 300
+  volumeMounts:
+    - name: post-config
+      mountPath: /app/config
+      readOnly: true
+    - name: post-migrations
+      mountPath: /app/migrations
+      readOnly: true
+  volumes:
+    - name: post-config
+      configMap:
+        name: post-service-config
+    - name: post-migrations
+      configMap:
+        name: post-service-migrations
 
 podAnnotations: {}
 podLabels: {}
@@ -64,8 +78,14 @@ readinessProbe:
   timeoutSeconds: 3
   failureThreshold: 6
 
-volumes: []
-volumeMounts: []
+volumes:
+  - name: post-config
+    configMap:
+      name: post-service-config
+volumeMounts:
+  - name: post-config
+    mountPath: /app/config
+    readOnly: true
 
 nodeSelector: {}
 tolerations: []

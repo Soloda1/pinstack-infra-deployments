@@ -43,6 +43,20 @@ migrator:
   backoffLimit: 3
   activeDeadlineSeconds: 180
   ttlSecondsAfterFinished: 300
+  volumeMounts:
+    - name: user-config
+      mountPath: /app/config
+      readOnly: true
+    - name: user-migrations
+      mountPath: /app/migrations
+      readOnly: true
+  volumes:
+    - name: user-config
+      configMap:
+        name: user-service-config
+    - name: user-migrations
+      configMap:
+        name: user-service-migrations
 
 podAnnotations: {}
 podLabels: {}
@@ -64,8 +78,14 @@ readinessProbe:
   timeoutSeconds: 3
   failureThreshold: 6
 
-volumes: []
-volumeMounts: []
+volumes:
+  - name: user-config
+    configMap:
+      name: user-service-config
+volumeMounts:
+  - name: user-config
+    mountPath: /app/config
+    readOnly: true
 
 nodeSelector: {}
 tolerations: []
